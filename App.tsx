@@ -18,8 +18,23 @@ export default function App() {
   const [borderColor, setBorderColor] = useState<'lightgrey' | 'lightgreen'>(
     'lightgrey'
   );
+  const [urlPath, setUrlPath] = useState('');
   const { state, startRecognizing, stopRecognizing, destroyRecognizer } =
     useVoiceRecognition();
+  const listFiles = async () => {
+    try {
+      const result = await FileSystem.readAsStringAsync(
+        FileSystem.documentDirectory!
+      );
+      if (result.length > 0) {
+        const filename = result[0];
+        const path = FileSystem.documentDirectory + filename;
+        setUrlPath(path);
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!state.results[0]) return;
@@ -36,6 +51,7 @@ export default function App() {
           const path = await writeAudioToFile(audioData);
 
           // play audio
+          setUrlPath(path);
           await playFromPath(path);
           destroyRecognizer();
         }
@@ -71,7 +87,12 @@ export default function App() {
       <Text style={{ marginVertical: 10, fontSize: 17 }}>
         {JSON.stringify(state, null, 2)}
       </Text>
-      <Button title='Reply last message' onPress={() => {}} />
+      <Button
+        title='Reply last message'
+        onPress={async () => {
+          await playFromPath(urlPath);
+        }}
+      />
     </View>
   );
 }
