@@ -1,6 +1,18 @@
 import { useState } from 'react';
 import { Button, StyleSheet, Text, View, Pressable } from 'react-native';
 import { useVoiceRecognition } from './hooks/useVoiceRecognition';
+import * as FileSystem from 'expo-file-system';
+import { Audio } from 'expo-av';
+import { writeAudioToFile } from './utils/writeAudioToFile';
+import { playFromPath } from './utils/playFromPath';
+
+Audio.setAudioModeAsync({
+  allowsRecordingIOS: false,
+  staysActiveInBackground: false,
+  playsInSilentModeIOS: true,
+  shouldDuckAndroid: true,
+  playThroughEarpieceAndroid: false,
+});
 
 export default function App() {
   const [borderColor, setBorderColor] = useState<'lightgrey' | 'lightgreen'>(
@@ -8,6 +20,31 @@ export default function App() {
   );
   const { state, startRecognizing, stopRecognizing, destroyRecognizer } =
     useVoiceRecognition();
+
+  const handleSubmit = async () => {
+    if (!state.results[0]) return;
+    try {
+      // fetch the audio
+      const audioBlob = await fetchAudio(state.results[0]);
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        if (e.target && typeof e.target.result === 'string') {
+          // [data:audio/mpeg;base64 , ...(actual base64 data)]
+          const audioData = e.target.result.split(',')[1];
+
+          // save data
+          const path = await writeAudioToFile(audioData);
+
+          // play audio
+          await playFromPath(path);
+          destroyRecognizer();
+        }
+      };
+      reader.readAsDataURL(audioBlob);
+    } catch (e) {
+      console.log(e);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -25,7 +62,7 @@ export default function App() {
         onPressOut={() => {
           setBorderColor('lightgrey');
           stopRecognizing();
-          // handleSubmit();
+          handleSubmit();
         }}
         style={[styles.button, { borderColor: borderColor }]}
       >
