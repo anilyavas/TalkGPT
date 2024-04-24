@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import { Button, StyleSheet, Text, View, Pressable } from 'react-native';
+import { useVoiceRecognition } from './hooks/useVoiceRecognition';
 
 export default function App() {
   const [borderColor, setBorderColor] = useState<'lightgrey' | 'lightgreen'>(
     'lightgrey'
   );
+  const { state, startRecognizing, stopRecognizing, destroyRecognizer } =
+    useVoiceRecognition();
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Talk GPT</Text>
@@ -14,16 +18,22 @@ export default function App() {
       </Text>
       <Text style={{ marginVertical: 10, fontSize: 17 }}>Your message:</Text>
       <Pressable
-        onPress={() => {
+        onPressIn={() => {
           setBorderColor('lightgreen');
+          startRecognizing();
         }}
         onPressOut={() => {
           setBorderColor('lightgrey');
+          stopRecognizing();
+          // handleSubmit();
         }}
         style={[styles.button, { borderColor: borderColor }]}
       >
         <Text>Hold to Speak</Text>
       </Pressable>
+      <Text style={{ marginVertical: 10, fontSize: 17 }}>
+        {JSON.stringify(state, null, 2)}
+      </Text>
       <Button title='Reply last message' onPress={() => {}} />
     </View>
   );
